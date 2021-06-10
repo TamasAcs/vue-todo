@@ -1,5 +1,5 @@
 import { auth, db } from '../boot/firebase'
-
+import { Notify } from 'quasar'
 const state = {
   userDetails: {}
 }
@@ -18,8 +18,22 @@ const actions = {
         name: payload.name,
         email: payload.email
       })
+      Notify.create({
+        type: 'warning',
+        color: 'positive',
+        timeout: 1500,
+        position: 'center',
+        message: 'Successful registration!'
+      })
     }).catch(error => {
       console.log(error.message)
+      Notify.create({
+        type: 'warning',
+        color: 'warning',
+        timeout: 1500,
+        position: 'center',
+        message: 'Password should be at least 6 character'
+      })
     })
   },
   loginUser ({ userDetails }, payload) {
@@ -28,6 +42,13 @@ const actions = {
       console.log(response)
     }).catch(error => {
       console.log(error.message)
+      Notify.create({
+        type: 'negative',
+        color: 'negative',
+        timeout: 2000,
+        position: 'center',
+        message: 'Invalid email or password! Please try again.'
+      })
     })
   },
   logoutUser () {
