@@ -1,9 +1,16 @@
 import Vue from 'vue'
 import Vuex from 'vuex'
-
 import store from './store'
 
+import VueRouter from 'vue-router'
 Vue.use(Vuex)
+
+const originalPush = VueRouter.prototype.push
+VueRouter.prototype.push = function push (location) {
+  return originalPush.call(this, location).catch(err => err)
+}
+// this is to avoid duplication of routing:
+// Uncaught (in promise) NavigationDuplicated: Avoided redundant navigation to current location: "/home".
 
 /*
  * If not building with SSR mode, you can

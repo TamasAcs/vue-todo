@@ -4,12 +4,15 @@
     <q-input
     v-if="tab == 'register'"
     class="q-mb-md"
+    color="black"
     outlined
     v-model="formData.name"
     label="Name"
+    :rules="[val => !!val || 'Name should be at least 3 characters']"
     />
     <q-input
     class="q-mb-md"
+    color="black"
     outlined
     type="email"
     v-model="formData.email"
@@ -18,14 +21,20 @@
     />
     <q-input
     class="q-mb-md"
+    color="black"
     outlined
     type="password"
     v-model="formData.password"
     label="Password"
-    :rules="[val => !!val || 'Email is invalid']"
+    :rules="[val => !!val || 'Password is invalid']"
     />
     <div class="row relative-position q-pt-lg">
-        <q-btn class="absolute-center" color="secondary" text-color="black" type="submit" :label="tab" />
+        <q-btn class="glossy absolute-center"
+        rounded
+        color="secondary"
+        text-color="black"
+        type="submit"
+        :label="tab" />
     </div>
 </q-form>
 </q-page>
@@ -57,6 +66,10 @@ export default {
     }
   },
   validations: {
+    name: {
+      required,
+      minLength: minLength(3)
+    },
     email: {
       required,
       email
@@ -68,3 +81,9 @@ export default {
   }
 }
 </script>
+
+<style>
+.q-placeholder{
+  color: black !important;
+}
+</style>

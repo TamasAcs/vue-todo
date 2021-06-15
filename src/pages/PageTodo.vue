@@ -2,29 +2,31 @@
   <q-page
   v-if="userDetails.userId"
   class="bg-grey-3 column">
-    <q-header elevated class="row">
-
-<div class="q-px-lg q-pt-xl q-mb-md">
-          <div class="text-h4">Welcome to your Todo App</div>
-          <div class="text-subtitle2">{{ todaysDate }}</div>
-        </div>
-    </q-header>
-    <div class="row q-pa-sm bg-primary">
+    <q-header
+    elevated
+    class="column">
+        <q-toolbar class="no-padding">
+          <q-btn class="q-ml-md" flat @click="leftDrawerOpen = !leftDrawerOpen" round dense icon="menu" />
+        </q-toolbar>
+          <div class="row q-pl-lg text-h5 text-weight-bold">
+          Welcome <p class="q-pl-sm text-capitalize">{{ userDetails.name }}</p></div>
+          <div class="q-pl-lg q-pb-md text-subtitle2">{{ todaysDate }}</div>
       <q-input
         class="col"
+        ref="input"
         v-model="newTask"
         @keyup.enter="addTask"
-        placeholder="Add task"
-        bg-color="white"
-        square
+        label="Add task"
+        label-color="white"
         filled
+        clearable
+        :rules="[val => val && val.length >= 3 || 'Please enter at least 3 characters']"
       >
-        <!-- hitting enter same as pressing add button -->
         <template v-slot:append>
-          <q-btn @click="addTask" round dense flat icon="add" />
+          <q-btn @click="addTask" round dense flat icon="add" color="white" />
         </template>
       </q-input>
-    </div>
+    </q-header>
     <q-list class="bg-white" separator bordered>
       <q-item
         v-for="task in tasks"
@@ -34,27 +36,26 @@
         clickable
         v-ripple
       >
-        <!-- with onclick and clickable makes it available to check or uncheck -->
-        <q-item-section avatar>
+      <!-- @click="task.done = !task.done" another way to toggle-->
+      <q-item-section avatar>
           <q-checkbox
             v-model="task.done"
-            class="no-pointer-events"
             color="primary"
           />
-          <!-- disables checkbox click -->
         </q-item-section>
-
         <q-item-section>
-          <q-item-label>{{ task.title }}</q-item-label>
+          <q-item-label
+          v-model="task.name">{{ task.title }}</q-item-label>
         </q-item-section>
         <q-item-section>
           <q-btn
             class="absolute-right"
             @click.stop="deleteTask(task.id)"
             flat
-            color="black"
+            color="red-14"
             icon="delete"
           />
+          <!-- .stop disabling parent action => toggle -->
         </q-item-section>
       </q-item>
     </q-list>
@@ -71,21 +72,24 @@
         :width="250"
         :breakpoint="600"
       >
-        <q-scroll-area style="height: calc(100% - 176px); margin-top: 176px; border-right: 1px solid #ddd">
-          <q-list padding>
+        <q-scroll-area style="height: calc(100% - 192px); margin-top: 192px; border-right: 1px solid #ddd">
+          <q-list
+          class="q-pt-md"
+          >
 
-            <EssentialLink
+          <EssentialLink
           v-for="link in essentialLinks"
           :key="link.title"
           v-bind="link"
-        />
+          />
           </q-list>
         </q-scroll-area>
 
-        <q-img class="absolute-top" src="https://cdn.quasar.dev/img/material.png" style="height: 176px">
+        <q-img class="absolute-top" src="../static/avatar-bg.jpg" style="height: 192px">
         <q-btn
         @click="logoutUser()"
-        class="absolute-top-right q-pr-sm"
+        class="absolute-top-right q-pa-sm"
+        color="white"
           flat
           dense
           no-caps
@@ -93,7 +97,7 @@
           label="Logout"
         />
           <div class="absolute-bottom bg-transparent">
-            <q-avatar size="56px" class="q-mb-sm">
+            <q-avatar size="56px" class="q-mb-lg">
               <img src="https://cdn.quasar.dev/img/boy-avatar.png">
             </q-avatar>
             <div class="text-weight-bold">{{ userDetails.name }}</div>
@@ -119,8 +123,8 @@ const user = [{
 const linksData = [
   {
     title: 'Todo',
-    icon: 'list',
-    link: '/'
+    icon: 'checklist',
+    link: ''
   },
   {
     title: 'Settings',
@@ -128,7 +132,7 @@ const linksData = [
     link: '/#/settings'
   }
 ]
-import { date } from 'quasar'
+import { date, Notify } from 'quasar'
 export default {
   name: 'MainLayout',
   components: { EssentialLink },
@@ -138,7 +142,8 @@ export default {
       tasks: [],
       user,
       leftDrawerOpen: false,
-      essentialLinks: linksData
+      essentialLinks: linksData,
+      progress: false
     }
   },
   computed: {
@@ -149,28 +154,61 @@ export default {
     }
   },
   methods: {
-    toggleDone (id) {
-      const task = this.tasks.find(task => task.id === id)
-      db.collection('tasks').doc({ id: id }).update({
-        done: !task.done
-      })
-      task.done = !task.done
-    },
-    deleteTask (id) {
-      const index = this.tasks.findIndex(task => task.id === id)
-      db.collection('tasks').doc({ id: id }).delete()
-      this.tasks.splice(index, 1)
-    },
     addTask () {
       const newTask = {
         id: Date.now(),
         title: this.newTask,
         done: false
       }
-      db.collection('tasks').add(newTask)
-      this.tasks.push(newTask)
-      this.newTask = ''
-      // after adding task clears input
+      this.$refs.input.validate()
+      if (this.$refs.input.hasError) {
+        this.formHasError = true
+      } else {
+        Notify.create({
+          type: 'positive',
+          color: 'positive',
+          timeout: 1500,
+          position: 'center',
+          message: 'New task added!'
+        })
+        db.collection('tasks').add(newTask)
+        this.tasks.push(newTask)
+        this.newTask = ''
+      }
+    },
+    deleteTask (id) {
+      this.$q.dialog({
+        title: 'Confirm',
+        message: 'Are you sure you want to delete?',
+        ok: {
+          push: true
+        },
+        cancel: {
+          push: true,
+          color: 'negative'
+        },
+        persistent: true
+      }).onOk(() => {
+        const index = this.tasks.findIndex(task => task.id === id)
+        db.collection('tasks').doc({ id: id }).delete()
+        this.tasks.splice(index, 1)
+        Notify.create({
+          type: 'positive',
+          color: 'negative',
+          timeout: 1000,
+          position: 'center',
+          message: 'Task deleted!'
+        })
+      }).onCancel(() => {
+      }).onDismiss(() => {
+      })
+    },
+    toggleDone (id) {
+      const task = this.tasks.find(task => task.id === id)
+      db.collection('tasks').doc({ id: id }).update({
+        done: !task.done
+      })
+      task.done = !task.done
     },
     ...mapActions('store', ['logoutUser']),
     getTasks () {
@@ -187,7 +225,41 @@ export default {
 
 <style lang="css">
 .q-header{
-  height: 176px;
+  height: 192px;
+}
+.q-header::before{
+  content: "";
+  top: 0;
+  left: 0;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  background: rgba(0,0,0,0.5);
+}
+.q-header::after{
+  content: "";
+  top: 0;
+  left: 0;
+  position: absolute;
+  background: url("../static/bg.jpg");
+  background-size: cover;
+  background-repeat: no-repeat;
+  width: 100%;
+  height: 100%;
+  z-index: -2;
+}
+.q-field__native{
+  color: white !important;
+}
+.q-field__focusable-action {
+  color: white;
+}
+.q-field--with-bottom {
+  padding-bottom: 22px;
+}
+.q-field--filled .q-field__control:before {
+  background: rgba(255,255,255,0.1) !important;
 }
 .done .q-item__label {
   color: #ccc;

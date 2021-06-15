@@ -10,16 +10,14 @@ const mutations = {
 }
 const actions = {
   registerUser ({ userDetails }, payload) {
-    console.log('payload:', payload)
     auth.createUserWithEmailAndPassword(payload.email, payload.password).then(response => {
-      console.log(response)
       const userId = auth.currentUser.uid
       db.ref('users/' + userId).set({
         name: payload.name,
         email: payload.email
       })
       Notify.create({
-        type: 'warning',
+        type: 'positive',
         color: 'positive',
         timeout: 1500,
         position: 'center',
@@ -37,9 +35,14 @@ const actions = {
     })
   },
   loginUser ({ userDetails }, payload) {
-    console.log('payload:', payload)
     auth.signInWithEmailAndPassword(payload.email, payload.password).then(response => {
-      console.log(response)
+      Notify.create({
+        type: 'positive',
+        color: 'positive',
+        timeout: 1000,
+        position: 'center',
+        message: 'You are logged in!'
+      })
     }).catch(error => {
       console.log(error.message)
       Notify.create({
